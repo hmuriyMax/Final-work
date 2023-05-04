@@ -1,0 +1,6 @@
+/graphs
+/datasets
+/.idea
+/.ipynb_checkpoints
+/venv
+/*.json
