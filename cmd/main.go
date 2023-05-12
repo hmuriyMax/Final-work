@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"math/rand"
 	"os"
 	"runtime"
 	"rwGo/internal/csv"
-	"rwGo/neuronets"
+	"rwGo/internal/neuronets"
 	"sync"
 	"time"
 )
@@ -23,36 +22,30 @@ type Result struct {
 	}
 }
 
-func PerformNS(nn neuronets.Neural, mC int, it int, id int) int {
+func PerformNS(nn neuronets.Neural, mC int, it int, id int, teachBatchSize int) int {
 	fmt.Printf("Neuro params: middleneuros: %d, steps: %d\n", mC, it)
-	nn.CreateNN(true, mC, it, id)
+	nn.CreateNN(true, mC, it, id, teachBatchSize)
 
+	in, out := nn.Generate(testTries, stdDev)
 	correctCount := 0
-	for i := 0; i < totalTries; i++ {
-		var ans string
-		rand.Seed(time.Now().UnixMilli())
-		a := rand.NormFloat64() * stdDev * 2
-		b := rand.NormFloat64() * stdDev * 2
-		if a*b > 0 {
-			ans = "Положительное"
-		} else {
-			ans = "Отрицательное"
-		}
-
-		if ans == nn.GetResult(nn.Forward([]float64{a, b})) {
+	inputFloats := in.ConvertToFloat64()
+	outputFloats := out.ConvertToFloat64()
+	for i := 0; i < testTries; i++ {
+		if nn.GetResult(outputFloats[i]) == nn.GetResult(nn.Forward(inputFloats[i])) {
 			correctCount++
 		}
 	}
-	percent := correctCount * 100 / totalTries
+	percent := correctCount * 100 / testTries
 	fmt.Printf("Correct items: %v \n", correctCount)
 	return percent
 }
 
 const (
-	totalTries = 1000
+	testTries  = 100
+	learnTries = 1000
 	outputFile = "output.json"
-	attempts   = 1
-	stdDev     = 10
+	attempts   = 3
+	stdDev     = 1000
 )
 
 func app(procNum int) int {
@@ -60,7 +53,7 @@ func app(procNum int) int {
 	fmt.Printf("Running on %v cores (default: %v)\n", procNum, runtime.NumCPU())
 	runtime.GOMAXPROCS(procNum)
 	nn := neuronets.NewMinusNet()
-	i, o := nn.Generate(1000, stdDev*2)
+	i, o := nn.Generate(learnTries, stdDev)
 	err := csv.WriteCSV(nn.GetDirPath()+csv.InputName, i)
 	if err != nil {
 		log.Fatalln(err)
@@ -69,23 +62,12 @@ func app(procNum int) int {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	//if len(os.Args) < 3 {
-	//	os.Exit(-1)
-	//}
-	//mC, err := strconv.Atoi(os.Args[1])
-	//if err != nil {
-	//	os.Exit(-1)
-	//}
-	//it, err := strconv.Atoi(os.Args[2])
-	//if err != nil {
-	//	os.Exit(-1)
-	//}
 	log.Printf("started performing experiments")
 	start := time.Now()
 	wg := sync.WaitGroup{}
 	mu := sync.Mutex{}
 	for n := 1; n <= 20; n++ {
-		for iterNumPow := 0; iterNumPow < 6; iterNumPow++ {
+		for iterNumPow := 0; iterNumPow < 7; iterNumPow++ {
 			wg.Add(1)
 			go func(n int, iterNumPow int) {
 				defer wg.Done()
@@ -93,7 +75,7 @@ func app(procNum int) int {
 				iterNum := int(math.Pow(2, float64(iterNumPow)))
 				accur := 0
 				for i := 0; i < attempts; i++ {
-					accur += PerformNS(&newN, n, iterNum, n*10+iterNumPow)
+					accur += PerformNS(&newN, n, iterNum, n*10+iterNumPow, learnTries)
 				}
 				accur /= attempts
 				mu.Lock()
@@ -126,5 +108,11 @@ func app(procNum int) int {
 }
 
 func main() {
+	err := os.RemoveAll("./datasets/minusDetect")
+	if err != nil {
+		log.Fatalf("remove dataset error: %v", err)
+	}
+	_ = os.Mkdir("./datasets/minusDetect", 0660)
+	fmt.Printf("clear dataset done")
 	fmt.Printf("total time: %v\n", app(8))
 }

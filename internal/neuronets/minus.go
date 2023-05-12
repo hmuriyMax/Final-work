@@ -21,13 +21,13 @@ func NewMinusNet() MinusNet {
 	}
 }
 
-func (g *MinusNet) CreateNN(regenerate bool, middleCount int, iterations int, id int) {
+func (g *MinusNet) CreateNN(regenerate bool, middleCount int, iterations int, id int, teachBatchSize int) {
 	addPath := ""
 	if id > 0 {
 		addPath = fmt.Sprintf("/%d", id)
 	}
 	g.additionalPath = addPath
-	g.nn = createNN(g.filepath, regenerate, []int{g.inputCount, middleCount, g.outputCount}, iterations, addPath)
+	g.nn = createNN(g.filepath, regenerate, []int{g.inputCount, middleCount, g.outputCount}, iterations, addPath, teachBatchSize)
 }
 
 func (g *MinusNet) GetResult(data []float64) string {
@@ -44,14 +44,14 @@ func (g *MinusNet) GetResult(data []float64) string {
 func (g *MinusNet) Generate(len int, num int) (inp entities.Data, out entities.Data) {
 
 	for i := 0; i < len; i++ {
-		a := rand.Intn(num*2) - num
-		b := rand.Intn(num*2) - num
+		a := float64(rand.Intn(num*2) - num)
+		b := float64(rand.Intn(num*2) - num)
 		inp = append(inp, []any{a, b})
 		var outExp []any
-		if a*b < 0 {
-			outExp = append(outExp, 0, 1)
-		} else {
+		if a*b > 0 {
 			outExp = append(outExp, 1, 0)
+		} else {
+			outExp = append(outExp, 0, 1)
 		}
 		out = append(out, outExp)
 	}

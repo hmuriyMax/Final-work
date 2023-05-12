@@ -19,13 +19,13 @@ func NewGameNet() GameNet {
 	}
 }
 
-func (g *GameNet) CreateNN(regenerate bool, middleCount int, iterations int, id int) {
+func (g *GameNet) CreateNN(regenerate bool, middleCount int, iterations int, id int, teachBatchSize int) {
 	addPath := ""
 	if id > 0 {
 		addPath = fmt.Sprintf("/%d", id)
 	}
 	g.additionalPath = addPath
-	g.nn = createNN(g.filepath, regenerate, []int{g.inputCount, middleCount, g.outputCount}, iterations, addPath)
+	g.nn = createNN(g.filepath, regenerate, []int{g.inputCount, middleCount, g.outputCount}, iterations, addPath, teachBatchSize)
 }
 
 func (g *GameNet) GetResult(data []float64) string {

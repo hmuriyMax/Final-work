@@ -51,6 +51,6 @@ if __name__ == '__main__':
     plt.xticks(ticks=np.arange(len(iters.keys())), labels=iters.keys(), rotation=90)
     plt.show()
     # time.sleep(10)
-    plt.plot([i + 1 for i in range(14)], [34443, 19503, 13959, 10443, 9400, 8528, 8800, 8400,
-                                          13839, 10682, 10781, 10155, 10520, 10804])
-    plt.show()
+    # plt.plot([i + 1 for i in range(14)], [34443, 19503, 13959, 10443, 9400, 8528, 8800, 8400,
+    #                                       13839, 10682, 10781, 10155, 10520, 10804])
+    # plt.show()
